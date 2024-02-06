@@ -125,7 +125,6 @@ void setup() {
   Serial.println("TIMER B BEGIN");
   Serial.println(beginTimer(&tim_b));
   Serial.println("timer initial start");
-  timers_on = true;
 
   delay(1000);
 }
