@@ -17,20 +17,64 @@
 */
 
 #include "thingProperties.h"
-#include "GPT_Stepper.h"
+
+#include "FspTimer.h"
 
 
 #define PIN_WINDER_STEP 9
 #define PIN_UNWINDER_STEP 6
 
 
-// GPT_Stepper stepper_R(8,9);
-// GPT_Stepper stepper_U(6,7);
 
-GPT_Stepper steppers[2] = {
-  GPT_Stepper(5, 4, 100.0),
-  GPT_Stepper(6, 7, 100.0)
-};
+FspTimer audio_timer;
+uint64_t count=0;
+uint64_t start_time=0;
+
+
+uint8_t pinstate_winder = 0;
+uint8_t pinstate_unwinder = 0;
+
+// callback method used by timer
+void timer_callback(timer_callback_args_t __attribute((unused)) *p_args) {
+  pinstate_winder = !pinstate_winder;
+  digitalWrite(6, pinstate_winder);
+  pinstate_unwinder = !pinstate_unwinder;
+  digitalWrite(5, pinstate_unwinder);
+}
+
+bool beginTimer(float rate) {
+  uint8_t timer_type = GPT_TIMER;
+  int8_t tindex = FspTimer::get_available_timer(timer_type);
+  if (tindex < 0){
+    tindex = FspTimer::get_available_timer(timer_type, true);
+  }
+  if (tindex < 0){
+    return false;
+  }
+
+  FspTimer::force_use_of_pwm_reserved_timer();
+
+  if(!audio_timer.begin(TIMER_MODE_PERIODIC, timer_type, tindex, rate, 0.0f, timer_callback)){
+    return false;
+  }
+
+  if (!audio_timer.setup_overflow_irq()){
+    return false;
+  }
+
+  if (!audio_timer.open()){
+    return false;
+  }
+
+  if (!audio_timer.start()){
+    return false;
+  }
+  return true;
+}
+
+
+
+
 
 void setup() {
   // Initialize serial and wait for port to open:
@@ -60,15 +104,11 @@ void setup() {
   // pinMode(PIN_UNWINDER_STEP, OUTPUT);
 
 
-  
-  //  GPT_Stepper(uint8_t spin, uint8_t dpin)
-  // Spin for step pin
-  // Dpin for direction pin
-
-  steppers[0].init();
-  steppers[1].init();
+  beginTimer(2000);
 
 }
+
+
 
 
 int real_winding_speed = 0;
@@ -110,10 +150,10 @@ void loop() {
         real_unwind_speed = 0;
       }
     //*/
-      real_winding_speed = roller_moving ? roller_winder : 0 ;
-      real_unwind_speed = roller_moving ? roller_unwinder : 0 ;
+      real_winding_speed = roller_moving ? roller_winder * roller_winder : 0 ;
+      real_unwind_speed = roller_moving ? roller_unwinder * roller_unwinder : 0 ;
       precise_winding_speed = roller_moving ? roller_winder / 10.0 : 0 ;
-      precise_unwind_speed = roller_moving ? roller_unwinder /10.0 : 0 ;
+      precise_unwind_speed = roller_moving ? roller_unwinder / 10.0 : 0 ;
       
     }
   }
@@ -138,16 +178,7 @@ void loop() {
     update_serial = true;
   }
   
-  if (roller_moving)
-  {
-    steppers[0].setSpeed(precise_winding_speed);
-    steppers[1].setSpeed(precise_unwind_speed);
-  }
-  else 
-  {
-    steppers[0].setSpeed(0);
-    steppers[1].setSpeed(0);
-  }
+
 
 
 }
