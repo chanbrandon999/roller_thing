@@ -108,8 +108,8 @@ void setup() {
   pinMode(PIN_WINDER_STEP, OUTPUT);
   pinMode(PIN_UNWINDER_STEP, OUTPUT);
 
-  tim_a.rate = 1;
-  tim_b.rate = 1;
+  tim_a.rate = 4;
+  tim_b.rate = 4;
 
   Serial.println("TIMER A INIT");
   Serial.println(initTimer(&tim_a));
@@ -125,9 +125,9 @@ void setup() {
   Serial.println("TIMER B BEGIN");
   Serial.println(beginTimer(&tim_b));
   Serial.println("timer initial start");
+  timers_on = true;
 
-  delay(5000);
-  
+  delay(1000);
 }
 
 
@@ -199,10 +199,6 @@ void loop() {
         beginTimer(&tim_a);
         Serial.println("starting timer B");
         beginTimer(&tim_b);
-        // tim_a.timer.set_frequency(real_winding_speed);
-        // tim_b.timer.set_frequency(real_unwind_speed);
-        // tim_a.timer.start();
-        // tim_b.timer.start();
       }
       else if (!roller_moving && timers_on)
       {
